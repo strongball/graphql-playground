@@ -3,29 +3,26 @@ import { createConnection } from "typeorm";
 import express from "express";
 import { ApolloServer } from "apollo-server-express";
 import { buildSchema } from "type-graphql";
-import dataloaders from "./dataloader";
+import { Container } from "typedi";
 
-import { HelloWorldResolver } from "./resolvers/HelloWorldResolver";
-import { MovieResolver } from "./resolvers/MovieResolver";
-import { UserResolver } from "./resolvers/UserResolver";
-import { MovieCategoryResolver } from "./resolvers/MovieCategoryResolver";
 (async () => {
-  const app = express();
+    const app = express();
 
-  await createConnection();
+    await createConnection();
 
-  const apolloServer = new ApolloServer({
-    schema: await buildSchema({
-      resolvers: [HelloWorldResolver, MovieResolver, UserResolver, MovieCategoryResolver]
-    }),
-    context: ({ req, res }) => {
-      return { req, res, dataloaders: dataloaders() }
-    }
-  });
+    const apolloServer = new ApolloServer({
+        schema: await buildSchema({
+            container: Container,
+            resolvers: [__dirname + "/resolvers/**/*.ts", __dirname + "/resolvers/**/*.js"],
+        }),
+        context: ({ req, res }) => {
+            return { req, res };
+        },
+    });
 
-  apolloServer.applyMiddleware({ app, cors: false });
+    apolloServer.applyMiddleware({ app, cors: false });
 
-  app.listen(8000, () => {
-    console.log("express server started");
-  });
+    app.listen(8000, () => {
+        console.log("express server started");
+    });
 })();
