@@ -1,28 +1,30 @@
 import "reflect-metadata";
 import { createConnection } from "typeorm";
-import express from "express";
-import { ApolloServer } from "apollo-server-express";
+import Koa from "koa";
+import { ApolloServer } from "apollo-server-koa";
 import { buildSchema } from "type-graphql";
 import { Container } from "typedi";
 
 (async () => {
-    const app = express();
+    const app = new Koa();
 
     await createConnection();
+    const schema = await buildSchema({
+        resolvers: [__dirname + "/resolvers/**/*.ts", __dirname + "/resolvers/**/*.js"],
+        container: Container,
+        dateScalarMode: "isoDate",
+    });
 
     const apolloServer = new ApolloServer({
-        schema: await buildSchema({
-            container: Container,
-            resolvers: [__dirname + "/resolvers/**/*.ts", __dirname + "/resolvers/**/*.js"],
-        }),
-        context: ({ req, res }) => {
-            return { req, res };
+        schema,
+        context: ctx => {
+            return ctx;
         },
     });
 
-    apolloServer.applyMiddleware({ app, cors: false });
+    apolloServer.applyMiddleware({ app });
 
     app.listen(8000, () => {
-        console.log("express server started");
+        console.log("Koa server started");
     });
 })();
